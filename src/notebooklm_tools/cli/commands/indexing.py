@@ -7,41 +7,49 @@ import json
 import typer
 from rich.console import Console
 
+from notebooklm_tools.mcp.tools.indexing import notebook_index_local, notebook_reindex_local
 from notebooklm_tools.services.indexing_utility import (
     build_plan,
     delete_profile,
     get_profile,
-    load_store,
+    list_profiles,
     set_profile,
-    set_server,
+    update_profile_notebook,
 )
 
 
 console = Console()
 app = typer.Typer(
-    help="Simple indexing utility: manage repo/file rules and notebook mapping",
+    help="Simple indexing utility: manage profile and run zero-setup index/reindex",
     rich_markup_mode="rich",
     no_args_is_help=True,
 )
 
-server_app = typer.Typer(
-    help="Manage MCP server targets (local today, cloud-ready profile for future)",
-    rich_markup_mode="rich",
-    no_args_is_help=True,
-)
+
+def _require_auth() -> None:
+    """Ensure user is logged in before indexing."""
+    from notebooklm_tools.mcp.tools._utils import get_client
+
+    try:
+        # This validates auth by constructing client from cache/env.
+        get_client()
+    except Exception:
+        console.print(
+            "[yellow]Login required.[/yellow] Please run [bold]nlm login[/bold] once, then retry."
+        )
+        raise typer.Exit(1)
 
 
 @app.command("set")
 def indexing_set(
-    name: str = typer.Argument(..., help="Profile name (e.g. work-docs)"),
+    name: str = typer.Argument(..., help="Profile name (e.g. my-project)"),
     repo: str = typer.Option(".", "--repo", help="Repository/root directory to scan"),
     include: list[str] | None = typer.Option(None, "--include", help="Include glob (repeatable)"),
     exclude: list[str] | None = typer.Option(None, "--exclude", help="Exclude glob (repeatable)"),
-    notebook_id: str | None = typer.Option(None, "--notebook-id", help="NotebookLM notebook ID"),
+    notebook_id: str | None = typer.Option(None, "--notebook-id", help="NotebookLM notebook ID (optional)"),
     notebook_title: str | None = typer.Option(None, "--notebook-title", help="Notebook title label"),
-    mcp_server: str = typer.Option("local", "--mcp-server", help="MCP server target id"),
 ) -> None:
-    """Create or update a user-friendly indexing profile."""
+    """Create/update an indexing profile."""
     profile = set_profile(
         name,
         repo_root=repo,
@@ -49,11 +57,10 @@ def indexing_set(
         exclude_patterns=exclude,
         notebook_id=notebook_id,
         notebook_title=notebook_title,
-        mcp_server_id=mcp_server,
     )
 
     console.print(f"[green]✓[/green] Saved indexing profile: [bold]{name}[/bold]")
-    console.print(json.dumps(profile, indent=2))
+    console.print_json(json.dumps(profile))
 
 
 @app.command("show")
@@ -71,14 +78,14 @@ def indexing_show(
 @app.command("list")
 def indexing_list() -> None:
     """List available indexing profiles."""
-    store = load_store()
-    profiles = store.get("profiles", {})
+    profiles = list_profiles()
     if not profiles:
         console.print("No indexing profiles yet. Use [bold]nlm indexing set[/bold].")
         return
 
     for name, profile in profiles.items():
-        console.print(f"- [bold]{name}[/bold] -> {profile.get('repo_root')} (mcp={profile.get('mcp_server_id')})")
+        nb = profile.get("notebook_id") or "(not indexed yet)"
+        console.print(f"- [bold]{name}[/bold] -> {profile.get('repo_root')} notebook={nb}")
 
 
 @app.command("delete")
@@ -107,26 +114,49 @@ def indexing_plan(
     console.print_json(json.dumps(result))
 
 
-@server_app.command("set")
-def server_set(
-    server_id: str = typer.Argument(..., help="Server id (e.g. local, cloud-team-a)"),
-    endpoint: str = typer.Option(..., "--endpoint", help="Endpoint URI or transport hint"),
-    mode: str = typer.Option("local", "--mode", help="local|cloud"),
-    description: str = typer.Option("", "--description", help="Friendly note"),
+@app.command("run")
+def indexing_run(
+    name: str = typer.Argument(..., help="Profile name"),
+    max_files: int = typer.Option(50, "--max-files", help="NotebookLM upload cap"),
+    wait: bool = typer.Option(True, "--wait/--no-wait", help="Wait for source processing"),
 ) -> None:
-    """Create/update MCP server target profile."""
-    server = set_server(server_id, endpoint=endpoint, mode=mode, description=description)
-    console.print(f"[green]✓[/green] Saved server target: [bold]{server_id}[/bold]")
-    console.print_json(json.dumps(server))
+    """Run indexing seamlessly: create notebook first time, reindex on subsequent runs."""
+    profile = get_profile(name)
+    if not profile:
+        console.print(f"[red]Profile not found:[/red] {name}")
+        raise typer.Exit(1)
 
+    _require_auth()
 
-@server_app.command("list")
-def server_list() -> None:
-    """List MCP server targets."""
-    store = load_store()
-    servers = store.get("servers", {})
-    for sid, server in servers.items():
-        console.print(f"- [bold]{sid}[/bold] ({server.get('mode')}): {server.get('endpoint')}")
+    root_dir = profile["repo_root"]
+    notebook_id = profile.get("notebook_id")
+    notebook_title = profile.get("notebook_title") or f"Local Index - {name}"
 
+    if notebook_id:
+        result = notebook_reindex_local(
+            notebook_id=notebook_id,
+            root_dir=root_dir,
+            max_files=max_files,
+            wait=wait,
+        )
+    else:
+        result = notebook_index_local(
+            root_dir=root_dir,
+            notebook_title=notebook_title,
+            max_files=max_files,
+            wait=wait,
+        )
 
-app.add_typer(server_app, name="server")
+    if result.get("status") != "success":
+        console.print(f"[red]Indexing failed:[/red] {result.get('error', 'unknown error')}")
+        raise typer.Exit(1)
+
+    if not notebook_id:
+        notebook = result.get("notebook", {})
+        nb_id = notebook.get("id")
+        nb_title = notebook.get("title")
+        if nb_id:
+            update_profile_notebook(name, nb_id, nb_title)
+
+    console.print("[green]✓[/green] Indexing completed")
+    console.print_json(json.dumps(result))

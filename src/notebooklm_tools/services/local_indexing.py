@@ -101,8 +101,6 @@ def scan_local_files(root_dir: str) -> list[FileCandidate]:
 
     Ignores files/folders from .gitignore and common heavy/system directories.
     """
-def scan_local_files(root_dir: str) -> list[FileCandidate]:
-    """Recursively scan and classify supported files under root_dir."""
     root = Path(root_dir).expanduser().resolve()
     if not root.exists() or not root.is_dir():
         raise ValueError(f"Directory does not exist or is not a directory: {root}")
@@ -141,19 +139,6 @@ def scan_local_files(root_dir: str) -> list[FileCandidate]:
             except OSError:
                 continue
             candidates.append(FileCandidate(path=str(full_path), size_bytes=size, media_type=media_type, priority=priority))
-    candidates: list[FileCandidate] = []
-    for p in root.rglob("*"):
-        if not p.is_file() or p.is_symlink():
-            continue
-        classified = classify_file(p)
-        if not classified:
-            continue
-        media_type, priority = classified
-        try:
-            size = p.stat().st_size
-        except OSError:
-            continue
-        candidates.append(FileCandidate(path=str(p), size_bytes=size, media_type=media_type, priority=priority))
 
     return candidates
 

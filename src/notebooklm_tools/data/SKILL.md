@@ -34,6 +34,37 @@ else:
 
 This skill documents BOTH approaches. Choose the appropriate one based on tool availability and **user preference**.
 
+## Zero-Setup File Understanding Workflow (MVP)
+
+When user asks to understand non-code project files (PDF/video/audio/image/docs), prefer this workflow:
+
+1. Ensure auth once:
+```bash
+nlm login --check || nlm login
+```
+2. Create/update a simple index profile (repo root defaults to current directory):
+```bash
+nlm indexing set project-files --repo .
+```
+3. Preview index plan (optional but recommended when large repos):
+```bash
+nlm indexing plan project-files --max-files 50
+```
+4. Run indexing:
+```bash
+nlm indexing run project-files
+```
+
+Behavior notes:
+- First run creates a notebook and stores notebook ID in the profile.
+- Subsequent runs automatically reindex the same notebook.
+- Scanning respects `.gitignore` and skips common heavy/system dirs.
+- Use `nlm notebook query <notebook-id> "..."` for notebook-wide questions.
+
+For file-specific questions:
+- Ask user for target file path/name.
+- If needed, use `nlm source list <notebook-id>` to find relevant source title/ID, then query notebook with explicit file context in prompt.
+
 ## Quick Reference
 
 **Run `nlm --ai` to get comprehensive AI-optimized documentation** - this provides a complete view of all CLI capabilities.

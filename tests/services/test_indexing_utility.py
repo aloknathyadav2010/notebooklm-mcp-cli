@@ -4,36 +4,34 @@ from notebooklm_tools.services.indexing_utility import (
     build_plan,
     delete_profile,
     get_profile,
-    load_store,
+    list_profiles,
     set_profile,
-    set_server,
+    update_profile_notebook,
 )
 
 
-def test_profile_and_server_persistence(tmp_path, monkeypatch):
+def test_profile_persistence_and_update_notebook(tmp_path, monkeypatch):
     monkeypatch.setenv("NOTEBOOKLM_MCP_CLI_PATH", str(tmp_path / "store"))
-
-    server = set_server("cloud-a", endpoint="https://mcp.example.com", mode="cloud", description="team")
-    assert server["mode"] == "cloud"
 
     profile = set_profile(
         "repo1",
         repo_root=str(tmp_path),
         include_patterns=["docs/*"],
         exclude_patterns=["docs/private/*"],
-        notebook_id="nb-1",
+        notebook_id=None,
         notebook_title="Repo Notebook",
-        mcp_server_id="cloud-a",
     )
 
-    assert profile["mcp_server_id"] == "cloud-a"
+    assert profile["notebook_id"] is None
     loaded = get_profile("repo1")
     assert loaded is not None
-    assert loaded["notebook_id"] == "nb-1"
 
-    store = load_store()
-    assert "local" in store["servers"]
-    assert "cloud-a" in store["servers"]
+    updated = update_profile_notebook("repo1", "nb-1", "Notebook One")
+    assert updated["notebook_id"] == "nb-1"
+    assert updated["notebook_title"] == "Notebook One"
+
+    profiles = list_profiles()
+    assert "repo1" in profiles
 
 
 def test_build_plan_include_exclude(tmp_path, monkeypatch):
@@ -51,7 +49,6 @@ def test_build_plan_include_exclude(tmp_path, monkeypatch):
         repo_root=str(tmp_path),
         include_patterns=["docs/*", "docs/**/*.pdf"],
         exclude_patterns=["docs/private/*"],
-        mcp_server_id="local",
     )
 
     plan = build_plan("repo2", max_files=10)

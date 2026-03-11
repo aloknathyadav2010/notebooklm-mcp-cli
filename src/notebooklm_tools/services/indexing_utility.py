@@ -1,27 +1,17 @@
-"""Simple user-facing indexing utility (profiles + MCP server targets)."""
+"""Simple user-facing indexing utility (profile-based, zero-setup oriented)."""
 
 from __future__ import annotations
 
 from fnmatch import fnmatch
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from notebooklm_tools.services.local_indexing import scan_local_files, select_files_for_upload
-import os
 
 
-DEFAULT_STORE = {
-    "profiles": {},
-    "servers": {
-        "local": {
-            "id": "local",
-            "mode": "local",
-            "endpoint": "stdio://notebooklm-mcp",
-            "description": "Local MCP server on user machine",
-        }
-    },
-}
+DEFAULT_STORE = {"profiles": {}}
 
 
 def _get_storage_dir() -> Path:
@@ -47,9 +37,6 @@ def load_store() -> dict[str, Any]:
         return json.loads(json.dumps(DEFAULT_STORE))
 
     data.setdefault("profiles", {})
-    data.setdefault("servers", {})
-    if "local" not in data["servers"]:
-        data["servers"]["local"] = DEFAULT_STORE["servers"]["local"]
     return data
 
 
@@ -61,25 +48,6 @@ def save_store(store: dict[str, Any]) -> Path:
     return path
 
 
-def set_server(
-    server_id: str,
-    *,
-    endpoint: str,
-    mode: str = "local",
-    description: str = "",
-) -> dict[str, Any]:
-    """Create/update an MCP server target profile."""
-    store = load_store()
-    store["servers"][server_id] = {
-        "id": server_id,
-        "mode": mode,
-        "endpoint": endpoint,
-        "description": description,
-    }
-    save_store(store)
-    return store["servers"][server_id]
-
-
 def set_profile(
     name: str,
     *,
@@ -88,7 +56,6 @@ def set_profile(
     exclude_patterns: list[str] | None = None,
     notebook_id: str | None = None,
     notebook_title: str | None = None,
-    mcp_server_id: str = "local",
 ) -> dict[str, Any]:
     """Create/update an indexing profile for normal users."""
     store = load_store()
@@ -100,9 +67,23 @@ def set_profile(
         "exclude_patterns": exclude_patterns or [],
         "notebook_id": notebook_id,
         "notebook_title": notebook_title,
-        "mcp_server_id": mcp_server_id,
     }
     store["profiles"][name] = profile
+    save_store(store)
+    return profile
+
+
+def update_profile_notebook(profile_name: str, notebook_id: str, notebook_title: str | None = None) -> dict[str, Any]:
+    """Persist notebook association after first index run."""
+    store = load_store()
+    profile = store.get("profiles", {}).get(profile_name)
+    if not profile:
+        raise ValueError(f"Profile not found: {profile_name}")
+
+    profile["notebook_id"] = notebook_id
+    if notebook_title:
+        profile["notebook_title"] = notebook_title
+    store["profiles"][profile_name] = profile
     save_store(store)
     return profile
 
@@ -110,6 +91,11 @@ def set_profile(
 def get_profile(name: str) -> dict[str, Any] | None:
     """Get one profile by name."""
     return load_store().get("profiles", {}).get(name)
+
+
+def list_profiles() -> dict[str, dict[str, Any]]:
+    """List all profiles."""
+    return load_store().get("profiles", {})
 
 
 def delete_profile(name: str) -> bool:

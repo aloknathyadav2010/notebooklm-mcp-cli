@@ -35,6 +35,22 @@ uv run pytest tests/test_file.py::test_function -v
 
 **Python requirement:** >=3.11
 
+## Get Started (Claude Code Skill + MCP)
+
+```bash
+# 1) Sync dependencies for local development
+uv sync
+
+# 2) Validate CLI is available
+uv run nlm --help
+
+# 3) Install NotebookLM skill for Claude Code
+uv run nlm skill install claude-code --level project
+
+# 4) Configure MCP server for Claude Code
+uv run nlm setup add claude-code
+```
+
 ## Authentication (SIMPLIFIED!)
 
 **You only need to provide COOKIES!** The CSRF token and session ID are now **automatically extracted** when needed.

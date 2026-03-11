@@ -66,6 +66,26 @@ export NOTEBOOKLM_COOKIES="SID=xxx; HSID=xxx; SSID=xxx; ..."
 
 Cookies last for weeks. The server auto-refreshes as long as Chrome profile login is valid.
 
+## Get Started (Skill Framework, No Manual Setup)
+
+```bash
+# 1) Install project dependencies
+uv sync
+
+# 2) Validate skill commands
+uv run nlm skill --help
+
+# 3) Install skill for your agent
+uv run nlm skill install claude-code --level project
+uv run nlm skill install cursor --level project
+uv run nlm skill install codex --level project
+uv run nlm skill install opencode --level project
+uv run nlm skill install gemini-cli --level project
+uv run nlm skill install antigravity --level project
+uv run nlm skill install cline --level project
+uv run nlm skill install openclaw --level project
+```
+
 ## Development Workflow
 
 ### Building and Running

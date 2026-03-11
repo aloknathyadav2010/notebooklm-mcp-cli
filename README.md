@@ -58,6 +58,21 @@ nlm skill ask project-files "Summarize this file" --file docs/spec.pdf
 nlm skill reindex project-files
 ```
 
+
+### 5) Install skill for your agent (optional but recommended)
+```bash
+nlm skill install claude-code
+nlm skill install cursor
+nlm skill install codex
+nlm skill install opencode
+nlm skill install gemini-cli
+nlm skill install antigravity
+nlm skill install cline
+nlm skill install openclaw
+```
+
+For project-local installs, append `--level project`.
+
 ---
 
 ## File Indexing Behavior

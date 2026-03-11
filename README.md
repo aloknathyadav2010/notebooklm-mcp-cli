@@ -29,6 +29,43 @@
 | [![CLI Overview](https://img.youtube.com/vi/XyXVuALWZkE/mqdefault.jpg)](https://www.youtube.com/watch?v=XyXVuALWZkE) | [![CLI, MCP & Skills](https://img.youtube.com/vi/ZQBQigFK-E8/mqdefault.jpg)](https://www.youtube.com/watch?v=ZQBQigFK-E8) | [![Setup, Doctor & mcpb](https://img.youtube.com/vi/5tOUilBTJ3Q/mqdefault.jpg)](https://www.youtube.com/watch?v=5tOUilBTJ3Q) | [![Latest: Infographics](https://img.youtube.com/vi/Uc6iH5NuQ9A/mqdefault.jpg)](https://www.youtube.com/watch?v=Uc6iH5NuQ9A) |
 
 
+## Quick Project Overview
+
+`notebooklm-mcp-cli` is a unified package that gives you:
+- `nlm` (CLI) for direct scripting and notebook/source/studio operations.
+- `notebooklm-mcp` (MCP server) so coding agents can call NotebookLM tools.
+
+### What this project is best for
+- Creating and managing NotebookLM notebooks programmatically.
+- Ingesting mixed sources (URLs, pasted text, Drive docs, local files).
+- Querying notebooks and generating Studio outputs (audio/video/reports/slides/etc.).
+- Running **local auto-indexing** workflows for code-adjacent artifacts:
+  - `notebook_index_local`: create a notebook and recursively upload supported local files.
+  - `notebook_reindex_local`: rebuild an indexed notebook from local files.
+
+### Beginner-friendly indexing utility (new)
+For non-power users, use `nlm indexing` with a simple profile and one command to run indexing:
+
+```bash
+# 1) Define a profile for your repo
+nlm indexing set my-work --repo . --include "docs/*" --exclude "docs/private/*"
+
+# 2) Preview selected/skipped files
+nlm indexing plan my-work --max-files 50
+
+# 3) Run indexing (first run creates notebook, next runs reindex)
+nlm indexing run my-work
+```
+
+If not authenticated, `nlm indexing run` prompts you to run `nlm login` once.
+
+### Local auto-indexing behavior
+- Scans a root directory recursively.
+- Respects `.gitignore` and skips common heavy/system folders (`.git`, `node_modules`, `venv`, build outputs).
+- Supports text/PDF/video/audio/image/Word files.
+- If candidate files exceed the cap, picks largest files with priority for text/PDF/video.
+- Stores reusable metadata (notebook id/title, uploaded/skipped/failed files, last update timestamp) in `.notebooklm/indexed_notebooks.json` by default.
+
 ## Two Ways to Use
 
 ### 🖥️ Command-Line Interface (CLI)
@@ -78,6 +115,7 @@ Then use natural language: *"Create a notebook about quantum computing and gener
 | Web/Drive research | `nlm research start` | `research_start` |
 | Share notebook | `nlm share public/invite` | `notebook_share_*` |
 | Sync Drive sources | `nlm source sync` | `source_sync_drive` |
+| Local directory auto-index/reindex | — | `notebook_index_local`, `notebook_reindex_local` |
 | Configure AI tools | `nlm setup add/remove/list` | — |
 | Install AI Skills | `nlm skill install/update` | — |
 | Diagnose issues | `nlm doctor` | — |

@@ -9,27 +9,41 @@ description: Skill-first workflow for understanding local non-code files (PDF, v
 Let users work entirely through the skill surface (no manual setup flow).
 
 ## Commands (agent-driven)
-0. One-time setup (no manual file copying):
+0. One-time setup (no manual file copying)
 ```bash
-# install CLI if needed
-uv tool install notebooklm-mcp-cli
+# Option A: zero-install invocation (recommended for skill runners)
+uvx --from notebooklm-mcp-cli nlm --help
 
-# install this skill into Codex skill path (project-local, no prompts)
-nlm skill install codex --level project
+# Option B: from this repository
+uv sync
+uv run nlm --help
 ```
-1. Bootstrap / first run:
+
+1. Install skill for your agent
+```bash
+nlm skill install claude-code --level project
+nlm skill install cursor --level project
+nlm skill install codex --level project
+nlm skill install opencode --level project
+nlm skill install gemini-cli --level project
+nlm skill install antigravity --level project
+nlm skill install cline --level project
+nlm skill install openclaw --level project
+```
+
+2. Bootstrap / first run:
 ```bash
 nlm skill bootstrap project-files --repo .
 ```
-2. Ask notebook-wide question:
+3. Ask notebook-wide question:
 ```bash
 nlm skill ask project-files "What are the main risks discussed in the docs?"
 ```
-3. Ask file-focused question:
+4. Ask file-focused question:
 ```bash
 nlm skill ask project-files "Summarize key decisions" --file docs/design.pdf
 ```
-4. Reindex after file changes:
+5. Reindex after file changes:
 ```bash
 nlm skill reindex project-files
 ```

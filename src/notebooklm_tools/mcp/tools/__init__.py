@@ -45,6 +45,10 @@ from .exports import (
 )
 from .notes import note
 from .server import server_info
+from .indexing import (
+    notebook_index_local,
+    notebook_reindex_local,
+)
 
 __all__ = [
     # Downloads (1 consolidated)
@@ -89,4 +93,7 @@ __all__ = [
     "note",
     # Server (1)
     "server_info",
+    # Local indexing (2)
+    "notebook_index_local",
+    "notebook_reindex_local",
 ]

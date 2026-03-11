@@ -15,6 +15,7 @@ Tool Modules:
 - chat.py: Query and conversation management
 - exports.py: Export artifacts to Google Docs/Sheets
 - notes.py: Note management (create, list, update, delete)
+- indexing.py: Local directory indexing + notebook reindex workflows
 """
 
 import argparse
@@ -76,6 +77,7 @@ def _register_tools():
         chat,
         exports,
         notes,
+        indexing,
     )
     
     # Register collected tools with mcp

@@ -732,6 +732,154 @@ def update(
             console.print("[dim]No installed skills found to update.[/dim]")
 
 
+
+
+@app.command("bootstrap")
+def bootstrap(
+    profile: str = typer.Argument("project-files", help="Index profile name"),
+    repo: str = typer.Option(".", "--repo", help="Repository/root path"),
+    max_files: int = typer.Option(50, "--max-files", help="Max files to index"),
+    wait: bool = typer.Option(True, "--wait/--no-wait", help="Wait for processing"),
+) -> None:
+    """Zero-setup skill bootstrap: login check, profile setup, index/reindex run."""
+    from notebooklm_tools.mcp.tools._utils import get_client
+    from notebooklm_tools.mcp.tools.indexing import notebook_index_local, notebook_reindex_local
+    from notebooklm_tools.services.indexing_utility import (
+        get_profile,
+        set_profile,
+        update_profile_notebook,
+    )
+
+    try:
+        get_client()
+    except Exception:
+        console.print("[yellow]Login required.[/yellow] Run [bold]nlm login[/bold] once, then retry.")
+        raise typer.Exit(1)
+
+    profile_data = get_profile(profile)
+    if not profile_data:
+        profile_data = set_profile(profile, repo_root=repo)
+
+    notebook_id = profile_data.get("notebook_id")
+    repo_root = profile_data.get("repo_root") or repo
+    notebook_title = profile_data.get("notebook_title") or f"Local Index - {profile}"
+
+    if notebook_id:
+        result = notebook_reindex_local(
+            notebook_id=notebook_id,
+            root_dir=repo_root,
+            max_files=max_files,
+            wait=wait,
+        )
+    else:
+        result = notebook_index_local(
+            root_dir=repo_root,
+            notebook_title=notebook_title,
+            max_files=max_files,
+            wait=wait,
+        )
+
+    if result.get("status") != "success":
+        console.print(f"[red]Bootstrap failed:[/red] {result.get('error', 'unknown error')}")
+        raise typer.Exit(1)
+
+    if not notebook_id:
+        notebook = result.get("notebook", {})
+        nb_id = notebook.get("id")
+        nb_title = notebook.get("title")
+        if nb_id:
+            update_profile_notebook(profile, nb_id, nb_title)
+
+    console.print("[green]✓[/green] Skill bootstrap complete")
+    console.print_json(data=json.dumps(result))
+
+
+@app.command("ask")
+def ask(
+    profile: str = typer.Argument("project-files", help="Index profile name"),
+    question: str = typer.Argument(..., help="Question to ask NotebookLM"),
+    file: str | None = typer.Option(None, "--file", help="Optional file-path focus hint"),
+) -> None:
+    """Ask NotebookLM through the skill using stored indexed notebook."""
+    from notebooklm_tools.mcp.tools._utils import get_client, get_query_timeout
+    from notebooklm_tools.services import chat as chat_service
+    from notebooklm_tools.services.indexing_utility import get_profile
+
+    profile_data = get_profile(profile)
+    if not profile_data:
+        console.print(f"[red]Profile not found:[/red] {profile}")
+        raise typer.Exit(1)
+
+    notebook_id = profile_data.get("notebook_id")
+    if not notebook_id:
+        console.print("[red]No notebook linked to this profile.[/red] Run [bold]nlm skill bootstrap[/bold] first.")
+        raise typer.Exit(1)
+
+    try:
+        client = get_client()
+    except Exception:
+        console.print("[yellow]Login required.[/yellow] Run [bold]nlm login[/bold] once, then retry.")
+        raise typer.Exit(1)
+
+    query_text = question
+    if file:
+        query_text = f"Focus on file '{file}'. {question}"
+
+    try:
+        result = chat_service.query(
+            client,
+            notebook_id,
+            query_text,
+            timeout=get_query_timeout(),
+        )
+    except Exception as e:
+        console.print(f"[red]Query failed:[/red] {e}")
+        raise typer.Exit(1)
+
+    console.print("[green]✓[/green] Answer")
+    console.print(result.get("answer", ""))
+
+
+@app.command("reindex")
+def reindex(
+    profile: str = typer.Argument("project-files", help="Index profile name"),
+    max_files: int = typer.Option(50, "--max-files", help="Max files to index"),
+    wait: bool = typer.Option(True, "--wait/--no-wait", help="Wait for processing"),
+) -> None:
+    """Reindex the notebook associated with a skill profile."""
+    from notebooklm_tools.mcp.tools._utils import get_client
+    from notebooklm_tools.mcp.tools.indexing import notebook_reindex_local
+    from notebooklm_tools.services.indexing_utility import get_profile
+
+    profile_data = get_profile(profile)
+    if not profile_data:
+        console.print(f"[red]Profile not found:[/red] {profile}")
+        raise typer.Exit(1)
+
+    notebook_id = profile_data.get("notebook_id")
+    if not notebook_id:
+        console.print("[red]No notebook linked to this profile.[/red] Run [bold]nlm skill bootstrap[/bold] first.")
+        raise typer.Exit(1)
+
+    try:
+        get_client()
+    except Exception:
+        console.print("[yellow]Login required.[/yellow] Run [bold]nlm login[/bold] once, then retry.")
+        raise typer.Exit(1)
+
+    result = notebook_reindex_local(
+        notebook_id=notebook_id,
+        root_dir=profile_data.get("repo_root"),
+        max_files=max_files,
+        wait=wait,
+    )
+    if result.get("status") != "success":
+        console.print(f"[red]Reindex failed:[/red] {result.get('error', 'unknown error')}")
+        raise typer.Exit(1)
+
+    console.print("[green]✓[/green] Reindex complete")
+    console.print_json(data=json.dumps(result))
+
 @app.command("show")
 def show() -> None:
     """

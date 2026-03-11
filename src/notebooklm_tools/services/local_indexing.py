@@ -4,11 +4,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from fnmatch import fnmatch
 import json
+import os
 from pathlib import Path
 
 
 DEFAULT_MAX_FILES = 50
+
+# Common heavy/system directories to skip by default for beginner-friendly indexing.
+DEFAULT_EXCLUDED_DIR_NAMES = {
+    ".git", ".hg", ".svn", "node_modules", ".venv", "venv", "dist", "build", "target",
+    "__pycache__", ".mypy_cache", ".pytest_cache",
+}
 
 TEXT_EXTENSIONS = {
     ".txt", ".md", ".markdown", ".rst", ".csv", ".tsv", ".json", ".yaml", ".yml",
@@ -17,6 +25,7 @@ TEXT_EXTENSIONS = {
 }
 PDF_EXTENSIONS = {".pdf"}
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v", ".avi", ".mkv", ".webm"}
+AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".tif", ".tiff"}
 WORD_EXTENSIONS = {".doc", ".docx", ".rtf", ".odt"}
 
@@ -40,6 +49,8 @@ def classify_file(path: Path) -> tuple[str, int] | None:
         return "pdf", 3
     if ext in VIDEO_EXTENSIONS:
         return "video", 3
+    if ext in AUDIO_EXTENSIONS:
+        return "audio", 3
     if ext in IMAGE_EXTENSIONS:
         return "image", 2
     if ext in WORD_EXTENSIONS:
@@ -47,12 +58,89 @@ def classify_file(path: Path) -> tuple[str, int] | None:
     return None
 
 
+def _read_gitignore_patterns(root: Path) -> list[str]:
+    gitignore_path = root / ".gitignore"
+    if not gitignore_path.exists() or not gitignore_path.is_file():
+        return []
+
+    patterns: list[str] = []
+    for raw in gitignore_path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("!"):
+            # Negation support can be added later; for MVP keep behavior predictable.
+            continue
+        patterns.append(line)
+    return patterns
+
+
+def _path_is_ignored(rel_path: str, patterns: list[str]) -> bool:
+    rel_norm = rel_path.replace("\\", "/")
+    for pattern in patterns:
+        p = pattern.replace("\\", "/")
+        # Directory pattern in .gitignore (e.g., build/)
+        if p.endswith("/"):
+            p_dir = p.rstrip("/")
+            if rel_norm == p_dir or rel_norm.startswith(p_dir + "/"):
+                return True
+        # Rooted pattern
+        if p.startswith("/"):
+            p = p[1:]
+            if fnmatch(rel_norm, p):
+                return True
+            continue
+        # General glob
+        if fnmatch(rel_norm, p) or fnmatch(Path(rel_norm).name, p):
+            return True
+    return False
+
+
+def scan_local_files(root_dir: str) -> list[FileCandidate]:
+    """Recursively scan and classify supported files under root_dir.
+
+    Ignores files/folders from .gitignore and common heavy/system directories.
+    """
 def scan_local_files(root_dir: str) -> list[FileCandidate]:
     """Recursively scan and classify supported files under root_dir."""
     root = Path(root_dir).expanduser().resolve()
     if not root.exists() or not root.is_dir():
         raise ValueError(f"Directory does not exist or is not a directory: {root}")
 
+    gitignore_patterns = _read_gitignore_patterns(root)
+
+    candidates: list[FileCandidate] = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dir_rel = str(Path(dirpath).resolve().relative_to(root)).replace("\\", "/")
+
+        pruned_dirs = []
+        for d in dirnames:
+            if d in DEFAULT_EXCLUDED_DIR_NAMES:
+                continue
+            rel = d if dir_rel == "." else f"{dir_rel}/{d}"
+            if _path_is_ignored(rel, gitignore_patterns):
+                continue
+            pruned_dirs.append(d)
+        dirnames[:] = pruned_dirs
+
+        for filename in filenames:
+            full_path = Path(dirpath) / filename
+            if full_path.is_symlink() or not full_path.is_file():
+                continue
+
+            rel = str(full_path.resolve().relative_to(root)).replace("\\", "/")
+            if _path_is_ignored(rel, gitignore_patterns):
+                continue
+
+            classified = classify_file(full_path)
+            if not classified:
+                continue
+            media_type, priority = classified
+            try:
+                size = full_path.stat().st_size
+            except OSError:
+                continue
+            candidates.append(FileCandidate(path=str(full_path), size_bytes=size, media_type=media_type, priority=priority))
     candidates: list[FileCandidate] = []
     for p in root.rglob("*"):
         if not p.is_file() or p.is_symlink():

@@ -43,9 +43,29 @@
   - `notebook_index_local`: create a notebook and recursively upload supported local files.
   - `notebook_reindex_local`: rebuild an indexed notebook from local files.
 
+### Beginner-friendly indexing utility (new)
+For non-power users, use `nlm indexing` to define **what to index** and **which MCP server target** to use:
+
+```bash
+# 1) Define a profile for your repo
+nlm indexing set my-work --repo . --include "docs/*" --exclude "docs/private/*"
+
+# 2) Attach/create MCP server target (local today, cloud-ready profile)
+nlm indexing server set cloud-team --mode cloud --endpoint "https://mcp.example.com" --description "future hosted server"
+nlm indexing set my-work --repo . --mcp-server cloud-team
+
+# 3) Dry-run to preview selected/skipped files
+nlm indexing plan my-work --max-files 50
+```
+
+This separates setup into:
+- **Part 1: Indexing profile** (repo, include/exclude rules, notebook mapping)
+- **Part 2: MCP server target** (local now, cloud endpoint later)
+
 ### Local auto-indexing behavior
 - Scans a root directory recursively.
-- Supports text/PDF/video/image/Word files.
+- Respects `.gitignore` and skips common heavy/system folders (`.git`, `node_modules`, `venv`, build outputs).
+- Supports text/PDF/video/audio/image/Word files.
 - If candidate files exceed the cap, picks largest files with priority for text/PDF/video.
 - Stores reusable metadata (notebook id/title, uploaded/skipped/failed files, last update timestamp) in `.notebooklm/indexed_notebooks.json` by default.
 

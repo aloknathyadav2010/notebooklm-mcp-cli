@@ -9,6 +9,14 @@ description: Skill-first workflow for understanding local non-code files (PDF, v
 Let users work entirely through the skill surface (no manual setup flow).
 
 ## Commands (agent-driven)
+0. One-time setup (no manual file copying):
+```bash
+# install CLI if needed
+uv tool install notebooklm-mcp-cli
+
+# install this skill into Codex skill path (project-local, no prompts)
+nlm skill install codex --level project
+```
 1. Bootstrap / first run:
 ```bash
 nlm skill bootstrap project-files --repo .

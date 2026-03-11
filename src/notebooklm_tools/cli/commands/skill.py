@@ -1,5 +1,7 @@
 """Skill installer commands for NotebookLM CLI."""
 
+import json
+import os
 import re
 import shutil
 from pathlib import Path
@@ -33,8 +35,8 @@ TOOL_CONFIGS = {
         "description": "Cursor AI editor",
     },
     "codex": {
-        "user": Path.home() / ".agents/skills/nlm-skill",
-        "project": Path(".agents/skills/nlm-skill"),
+        "user": Path(".codex/skills/nlm-skill"),
+        "project": Path(".codex/skills/nlm-skill"),
         "format": "skill.md",
         "description": "OpenAI Codex CLI",
     },
@@ -95,6 +97,26 @@ def get_data_dir() -> Path:
     return data_dir
 
 
+
+
+def _codex_home() -> Path:
+    """Get Codex home directory honoring $CODEX_HOME."""
+    codex_home = os.environ.get("CODEX_HOME")
+    if codex_home:
+        return Path(codex_home).expanduser()
+    return Path.home() / ".codex"
+
+
+def _resolve_install_path(tool: str, level: str, config: dict) -> Optional[Path]:
+    """Resolve install path, including dynamic tool-specific paths."""
+    if tool == "codex":
+        return _codex_home() / "skills/nlm-skill" if level == "user" else Path(".codex/skills/nlm-skill")
+
+    if level == "user" and "user" in config:
+        return config["user"]
+    if level == "project" and "project" in config:
+        return config["project"]
+    return None
 def check_install_status(tool: str, level: str = "user") -> tuple[bool, Optional[Path]]:
     """Check if skill is installed for a tool.
 
@@ -106,12 +128,8 @@ def check_install_status(tool: str, level: str = "user") -> tuple[bool, Optional
 
     config = TOOL_CONFIGS[tool]
 
-    # Get install path
-    if level == "user" and "user" in config:
-        install_path = config["user"]
-    elif level == "project" and "project" in config:
-        install_path = config["project"]
-    else:
+    install_path = _resolve_install_path(tool, level, config)
+    if not install_path:
         return False, None
 
     # Check format
@@ -153,7 +171,7 @@ def _inject_version_to_frontmatter(skill_path: Path) -> None:
 def _get_installed_version(tool: str, level: str) -> Optional[str]:
     """Read the version from an installed skill. Returns None if not found."""
     config = TOOL_CONFIGS[tool]
-    install_path = config.get(level)
+    install_path = _resolve_install_path(tool, level, config)
     if not install_path:
         return None
 
@@ -348,7 +366,7 @@ Or for project-level installation, copy to:
 
 ### Codex
 ```bash
-cp -r nlm-skill ~/.agents/skills/
+cp -r nlm-skill ~/.codex/skills/
 ```
 
 ## Automated Installation
@@ -411,9 +429,9 @@ def install(
             raise typer.Exit(1)
 
     # Get install path
-    install_path = config.get(level)
+    install_path = _resolve_install_path(tool, level, config)
     if not install_path:
-        install_path = config.get("project")  # Fallback
+        install_path = _resolve_install_path(tool, "project", config)  # Fallback
 
     # Validate parent directory exists for user-level installs
     if level == "user" and install_path:
@@ -427,36 +445,40 @@ def install(
             parent_dir = None
 
         if parent_dir and not parent_dir.exists():
-            console.print(f"[yellow]Warning:[/yellow] Parent directory does not exist: {parent_dir}")
-            console.print(f"This suggests {tool} may not be installed on your system.")
-            console.print()
-
-            # Offer options
-            console.print("Options:")
-            console.print(f"  1. Create the directory and install anyway")
-            console.print(f"  2. Use --level project to install in current directory")
-            console.print(f"  3. Cancel and install {tool} first")
-            console.print()
-
-            choice = typer.prompt(
-                "Choose an option",
-                type=int,
-                default=2,
-            )
-
-            if choice == 1:
-                console.print(f"[dim]Creating {parent_dir}...[/dim]")
+            if tool == "codex":
+                console.print(f"[dim]Creating {parent_dir} for Codex skill installation...[/dim]")
                 parent_dir.mkdir(parents=True, exist_ok=True)
-            elif choice == 2:
-                console.print(f"[dim]Switching to project-level installation...[/dim]")
-                level = "project"
-                install_path = config.get("project")
-                if not install_path:
-                    console.print(f"[red]Error:[/red] Tool '{tool}' does not support project-level installation")
-                    raise typer.Exit(1)
             else:
-                console.print("Cancelled.")
-                raise typer.Exit(0)
+                console.print(f"[yellow]Warning:[/yellow] Parent directory does not exist: {parent_dir}")
+                console.print(f"This suggests {tool} may not be installed on your system.")
+                console.print()
+
+                # Offer options
+                console.print("Options:")
+                console.print(f"  1. Create the directory and install anyway")
+                console.print(f"  2. Use --level project to install in current directory")
+                console.print(f"  3. Cancel and install {tool} first")
+                console.print()
+
+                choice = typer.prompt(
+                    "Choose an option",
+                    type=int,
+                    default=2,
+                )
+
+                if choice == 1:
+                    console.print(f"[dim]Creating {parent_dir}...[/dim]")
+                    parent_dir.mkdir(parents=True, exist_ok=True)
+                elif choice == 2:
+                    console.print(f"[dim]Switching to project-level installation...[/dim]")
+                    level = "project"
+                    install_path = _resolve_install_path(tool, level, config)
+                    if not install_path:
+                        console.print(f"[red]Error:[/red] Tool '{tool}' does not support project-level installation")
+                        raise typer.Exit(1)
+                else:
+                    console.print("Cancelled.")
+                    raise typer.Exit(0)
 
     # Check if already installed
     is_installed, _ = check_install_status(tool, level)
@@ -646,7 +668,7 @@ def list_tools() -> None:
 def _update_single_tool(tool: str, level: str) -> bool:
     """Update a single tool's skill at the given level. Returns True if updated."""
     config = TOOL_CONFIGS[tool]
-    install_path = config.get(level)
+    install_path = _resolve_install_path(tool, level, config)
     if not install_path:
         return False
 

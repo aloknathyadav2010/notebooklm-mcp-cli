@@ -616,7 +616,7 @@ nlm skill show                              # Display skill content
 - `antigravity` - Antigravity agent framework (`~/.gemini/antigravity/skills/nlm-skill/`)
 - `cline` - Cline CLI terminal agent (`~/.cline/skills/nlm-skill/`)
 - `openclaw` - OpenClaw AI agent framework (`~/.openclaw/workspace/skills/nlm-skill/`)
-- `codex` - Codex AI assistant (`~/.agents/skills/nlm-skill/`)
+- `codex` - Codex AI assistant (`~/.codex/skills/nlm-skill/`)
 - `other` - Export all formats to `./nlm-skill-export/` for manual installation
 
 **Installation Levels:**
@@ -646,7 +646,7 @@ nlm skill show | head -50
 - `SKILL.md` - Main skill file with NotebookLM CLI/MCP documentation
 - `references/` - Additional documentation (command_reference.md, troubleshooting.md, workflows.md)
 
-For Codex, it installs to `~/.agents/skills/nlm-skill/SKILL.md` per official Codex docs.
+For Codex, it installs to `~/.codex/skills/nlm-skill/SKILL.md` (or `$CODEX_HOME/skills/nlm-skill/SKILL.md` when `CODEX_HOME` is set).
 
 **Note:** If the parent directory doesn't exist (e.g., `~/.claude/` for Claude Code), the installer will prompt you to either create it, switch to project-level installation, or cancel.
 

@@ -547,6 +547,33 @@ nlm skill uninstall <tool>                  # Uninstall skill
 
 **Verb-first aliases**: `nlm update skill`, `nlm list skills`, `nlm install skill`
 
+**Get Started (by agent):**
+```bash
+# Claude Code
+nlm skill install claude-code
+
+# Cursor
+nlm skill install cursor
+
+# Codex (uses ~/.codex/skills by default)
+nlm skill install codex
+
+# OpenCode
+nlm skill install opencode
+
+# Gemini CLI
+nlm skill install gemini-cli
+
+# Antigravity
+nlm skill install antigravity
+
+# Cline
+nlm skill install cline
+
+# OpenClaw
+nlm skill install openclaw
+```
+
 ## Output Formats
 
 Most list commands support multiple formats:

@@ -16,6 +16,7 @@ Tool Modules:
 - exports.py: Export artifacts to Google Docs/Sheets
 - notes.py: Note management (create, list, update, delete)
 - indexing.py: Local directory indexing + notebook reindex workflows
+- skill_utility.py: Skill-first bootstrap/ask/reindex/profile helpers
 """
 
 import argparse
@@ -78,6 +79,7 @@ def _register_tools():
         exports,
         notes,
         indexing,
+        skill_utility,
     )
     
     # Register collected tools with mcp

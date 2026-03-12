@@ -1,5 +1,6 @@
 """Sources service — shared validation and logic for source management."""
 
+import asyncio
 from typing import TypedDict, Optional
 
 from ..core.client import NotebookLMClient
@@ -7,6 +8,7 @@ from .errors import ValidationError, ServiceError
 
 VALID_SOURCE_TYPES = ("url", "text", "drive", "file")
 VALID_DRIVE_DOC_TYPES = ("doc", "slides", "sheets", "pdf")
+MAX_PARALLEL_FILE_UPLOADS = 8
 
 # MIME type mapping for Drive doc types
 DRIVE_MIME_TYPES = {
@@ -72,6 +74,42 @@ class BulkAddResult(TypedDict):
     """Result of bulk adding sources."""
     results: list[AddSourceResult]
     added_count: int
+
+
+async def _add_sources_parallel(
+    client: NotebookLMClient,
+    notebook_id: str,
+    sources: list[tuple[int, dict]],
+    *,
+    wait: bool,
+    wait_timeout: float,
+    max_parallel: int = MAX_PARALLEL_FILE_UPLOADS,
+) -> list[tuple[int, AddSourceResult]]:
+    """Add sources concurrently using asyncio thread offloading.
+
+    Returns list of (index, AddSourceResult) preserving source index mapping.
+    """
+    semaphore = asyncio.Semaphore(max(1, max_parallel))
+
+    async def _upload(index: int, src: dict) -> tuple[int, AddSourceResult]:
+        async with semaphore:
+            result = await asyncio.to_thread(
+                add_source,
+                client,
+                notebook_id,
+                src["source_type"],
+                text=src.get("text"),
+                title=src.get("title"),
+                file_path=src.get("file_path"),
+                document_id=src.get("document_id"),
+                doc_type=src.get("doc_type", "doc"),
+                wait=wait,
+                wait_timeout=wait_timeout,
+            )
+            return index, result
+
+    tasks = [_upload(index, src) for index, src in sources]
+    return await asyncio.gather(*tasks)
 
 
 def validate_source_type(source_type: str) -> None:
@@ -275,9 +313,16 @@ def add_sources(
                 user_message="Could not add URL sources.",
             )
 
-    # Add non-URL sources individually
-    for src in other_sources:
-        result = add_source(
+    # Add non-URL sources; file uploads are parallelized for large batches.
+    other_results: list[Optional[AddSourceResult]] = [None] * len(other_sources)
+    parallel_file_sources: list[tuple[int, dict]] = []
+
+    for index, src in enumerate(other_sources):
+        if src.get("source_type") == "file":
+            parallel_file_sources.append((index, src))
+            continue
+
+        other_results[index] = add_source(
             client, notebook_id, src["source_type"],
             text=src.get("text"),
             title=src.get("title"),
@@ -286,12 +331,51 @@ def add_sources(
             doc_type=src.get("doc_type", "doc"),
             wait=wait, wait_timeout=wait_timeout,
         )
-        results.append(result)
+
+    if parallel_file_sources:
+        parallel_results = _run_parallel_file_uploads(
+            client,
+            notebook_id,
+            parallel_file_sources,
+            wait=wait,
+            wait_timeout=wait_timeout,
+        )
+        for index, result in parallel_results:
+            other_results[index] = result
+
+    # Collapse optional typing; every slot should be populated.
+    results.extend([r for r in other_results if r is not None])
 
     return {
         "results": results,
         "added_count": len(results),
     }
+
+
+def _run_parallel_file_uploads(
+    client: NotebookLMClient,
+    notebook_id: str,
+    sources: list[tuple[int, dict]],
+    *,
+    wait: bool,
+    wait_timeout: float,
+) -> list[tuple[int, AddSourceResult]]:
+    """Run async file uploads from sync code, including async-loop contexts."""
+    coroutine = _add_sources_parallel(
+        client,
+        notebook_id,
+        sources,
+        wait=wait,
+        wait_timeout=wait_timeout,
+    )
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(coroutine)
+
+    # If we're already inside an event loop, run the coroutine in a worker thread.
+    return asyncio.run(asyncio.to_thread(asyncio.run, coroutine))
 
 
 def list_drive_sources(

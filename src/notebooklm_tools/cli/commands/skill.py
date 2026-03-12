@@ -97,8 +97,6 @@ def get_data_dir() -> Path:
     return data_dir
 
 
-
-
 def _codex_home() -> Path:
     """Get Codex home directory honoring $CODEX_HOME."""
     codex_home = os.environ.get("CODEX_HOME")
@@ -117,6 +115,28 @@ def _resolve_install_path(tool: str, level: str, config: dict) -> Optional[Path]
     if level == "project" and "project" in config:
         return config["project"]
     return None
+
+
+def _detect_framework() -> Optional[str]:
+    """Auto-detect the active agent framework from workspace markers."""
+    cwd = Path.cwd()
+    markers: list[tuple[str, Path]] = [
+        ("antigravity", cwd / ".agent"),
+        ("claude-code", cwd / ".claude"),
+        ("cursor", cwd / ".cursor"),
+        ("codex", cwd / ".codex"),
+        ("opencode", cwd / ".opencode"),
+        ("gemini-cli", cwd / ".gemini"),
+        ("cline", cwd / ".cline"),
+        ("openclaw", cwd / ".openclaw"),
+    ]
+
+    for tool, marker in markers:
+        if marker.exists():
+            return tool
+    return None
+
+
 def check_install_status(tool: str, level: str = "user") -> tuple[bool, Optional[Path]]:
     """Check if skill is installed for a tool.
 
@@ -223,7 +243,6 @@ def _inject_version_to_agents_md(agents_path: Path) -> None:
             agents_path.write_text(content)
     except Exception:
         pass
-
 
 
 def install_skill_md(install_path: Path) -> None:
@@ -754,8 +773,6 @@ def update(
             console.print("[dim]No installed skills found to update.[/dim]")
 
 
-
-
 @app.command("bootstrap")
 def bootstrap(
     profile: str = typer.Argument("project-files", help="Index profile name"),
@@ -916,3 +933,78 @@ def show() -> None:
 
     content = skill_file.read_text()
     console.print(content)
+
+
+@app.command("add")
+def add(
+    framework: Optional[str] = typer.Argument(
+        None,
+        help="Framework name (auto-detected if omitted)",
+        shell_complete=complete_tool_name,
+    ),
+    level: Literal["project", "user"] = typer.Option(
+        "project",
+        "--level",
+        "-l",
+        help="Add skill at project level (recommended) or user level",
+    ),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing added skill"),
+) -> None:
+    """Add the NLM skill into the current workspace for the detected agent framework."""
+    selected = framework or _detect_framework()
+
+    if not selected:
+        selected = "antigravity"
+        console.print("[yellow]![/yellow] Could not detect framework. Defaulting to [cyan]antigravity[/cyan].")
+
+    if selected not in TOOL_CONFIGS or selected == "other":
+        valid = ", ".join([k for k in TOOL_CONFIGS if k != "other"])
+        console.print(f"[red]Error:[/red] Unknown framework '{selected}'")
+        console.print(f"Valid frameworks: {valid}")
+        raise typer.Exit(1)
+
+    config = TOOL_CONFIGS[selected]
+    install_path = _resolve_install_path(selected, level, config)
+    if not install_path:
+        console.print(f"[red]Error:[/red] Framework '{selected}' does not support --level {level}")
+        raise typer.Exit(1)
+
+    skill_file = install_path / "SKILL.md"
+    if skill_file.exists() and not force:
+        console.print(f"[yellow]![/yellow] Skill already present at {install_path}")
+        console.print("Use [bold]--force[/bold] to overwrite.")
+        raise typer.Exit(0)
+
+    install_skill_md(install_path)
+    console.print(f"\n[green]✓[/green] Added NLM skill for [cyan]{selected}[/cyan] at [bold]{install_path}[/bold]")
+    console.print("[dim]Tip: run 'nlm skill diagnose' if 'nlm' is not found in PATH.[/dim]")
+
+
+@app.command("inject")
+def inject(
+    framework: Optional[str] = typer.Argument(
+        None,
+        help="Alias for 'nlm skill add'",
+        shell_complete=complete_tool_name,
+    ),
+    level: Literal["project", "user"] = typer.Option("project", "--level", "-l"),
+    force: bool = typer.Option(False, "--force"),
+) -> None:
+    """Alias for `nlm skill add`."""
+    add(framework=framework, level=level, force=force)
+
+
+@app.command("diagnose")
+def diagnose() -> None:
+    """Check if `nlm` is available in PATH and provide remediation steps."""
+    nlm_path = shutil.which("nlm")
+    if nlm_path:
+        console.print(f"[green]✓[/green] nlm found in PATH: [bold]{nlm_path}[/bold]")
+        console.print("Run [bold]nlm --version[/bold] to verify the installed version.")
+        return
+
+    console.print("[red]✗[/red] `nlm` not found in PATH.")
+    console.print("Install or refresh it with one of these commands:")
+    console.print("  [bold]uv tool install --force notebooklm-mcp-cli[/bold]")
+    console.print("  [bold]pipx install --force notebooklm-mcp-cli[/bold]")
+    console.print("Then open a new shell and run [bold]nlm --version[/bold].")

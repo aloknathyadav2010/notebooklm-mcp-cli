@@ -19,8 +19,12 @@ uv sync
 uv run nlm --help
 ```
 
-1. Install skill for your agent
+1. Integrity + install skill for your agent
 ```bash
+nlm skill diagnose
+nlm skill add
+
+# Optional explicit installation targets
 nlm skill install claude-code --level project
 nlm skill install cursor --level project
 nlm skill install codex --level project

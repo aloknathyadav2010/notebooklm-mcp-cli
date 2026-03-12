@@ -29,6 +29,7 @@ The project now emphasizes:
 
 ### 1) Login once
 ```bash
+nlm skill diagnose
 nlm login --check || nlm login
 ```
 
@@ -59,19 +60,21 @@ nlm skill reindex project-files
 ```
 
 
-### 5) Install skill for your agent (optional but recommended)
+### 5) Link skill for your agent (optional but recommended)
 ```bash
-nlm skill install claude-code
-nlm skill install cursor
-nlm skill install codex
-nlm skill install opencode
-nlm skill install gemini-cli
-nlm skill install antigravity
-nlm skill install cline
-nlm skill install openclaw
+nlm skill add
 ```
 
-For project-local installs, append `--level project`.
+This auto-detects the active framework and copies `SKILL.md` + `references/` into the workspace skill path.
+
+If detection is ambiguous, pass a framework explicitly:
+
+```bash
+nlm skill add claude-code --level project
+nlm skill add antigravity --level project
+```
+
+Legacy install flow still works via `nlm skill install <tool>`.
 
 ---
 

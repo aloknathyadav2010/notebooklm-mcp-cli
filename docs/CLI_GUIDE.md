@@ -5,11 +5,9 @@ Complete command reference for the `nlm` command-line interface.
 ## Installation
 
 ```bash
-# Using uv (recommended)
-uv tool install notebooklm-mcp-cli
+# Using uv from this repository (recommended)
+uv tool install "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
 
-# Using pip
-pip install notebooklm-mcp-cli
 ```
 
 ## Authentication

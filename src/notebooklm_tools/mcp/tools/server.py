@@ -5,6 +5,7 @@ import json
 from typing import Any
 
 from notebooklm_tools import __version__
+from notebooklm_tools.install_source import uv_tool_uninstall_command, uv_tool_update_command
 from ._utils import logged_tool
 
 
@@ -64,6 +65,6 @@ def server_info() -> dict[str, Any]:
         "version": __version__,
         "latest_version": latest,
         "update_available": update_available,
-        "update_command": "uv tool upgrade notebooklm-mcp-cli",
-        "pip_update_command": "pip install --upgrade notebooklm-mcp-cli",
+        "update_command": uv_tool_update_command(),
+        "uninstall_command": uv_tool_uninstall_command(),
     }

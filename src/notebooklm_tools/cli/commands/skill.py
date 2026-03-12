@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from notebooklm_tools import __version__
+from notebooklm_tools.install_source import uv_tool_install_command, uv_tool_uninstall_command
 
 import typer
 from rich.console import Console
@@ -1005,6 +1006,6 @@ def diagnose() -> None:
 
     console.print("[red]✗[/red] `nlm` not found in PATH.")
     console.print("Install or refresh it with one of these commands:")
-    console.print("  [bold]uv tool install --force notebooklm-mcp-cli[/bold]")
-    console.print("  [bold]pipx install --force notebooklm-mcp-cli[/bold]")
+    console.print(f"  [bold]{uv_tool_install_command(force=True)}[/bold]")
     console.print("Then open a new shell and run [bold]nlm --version[/bold].")
+    console.print(f"To fully remove the tool, run [bold]{uv_tool_uninstall_command()}[/bold].")

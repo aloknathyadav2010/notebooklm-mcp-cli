@@ -5,6 +5,7 @@ from __future__ import annotations
 import shutil
 from typing import Any, Literal
 
+from notebooklm_tools.install_source import uv_tool_install_command
 from ._utils import get_client, get_query_timeout, logged_tool
 from .indexing import notebook_index_local, notebook_reindex_local
 from ...cli.commands import skill as skill_cli
@@ -251,5 +252,5 @@ def skill_diagnose_cli() -> dict[str, Any]:
     return {
         "status": "success",
         "found": False,
-        "message": "`nlm` not found in PATH. Install via `uv tool install notebooklm-mcp-cli` or `pipx install notebooklm-mcp-cli`.",
+        "message": f"`nlm` not found in PATH. Install via `{uv_tool_install_command(force=True)}`.",
     }

@@ -5,8 +5,8 @@ Complete reference for the NotebookLM MCP server - **29 tools** for AI assistant
 ## Installation
 
 ```bash
-# Install the package
-uv tool install notebooklm-mcp-cli
+# Install from this repository (recommended)
+uv tool install "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
 
 # Add to Claude Code
 claude mcp add --scope user notebooklm-mcp notebooklm-mcp

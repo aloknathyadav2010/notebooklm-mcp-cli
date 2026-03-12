@@ -29,21 +29,21 @@ If you are brand new, this guide walks you through setup end-to-end with concret
    ```bash
    python --version
    ```
-2. (Recommended) one installer: **uv** or **pipx**
-   - uv: <https://docs.astral.sh/uv/>
-   - pipx: <https://pypa.github.io/pipx/>
+2. Install **uv**: <https://docs.astral.sh/uv/>
 3. A Google account with NotebookLM access.
 
 ---
 
 ## 3) Installation options (pick one)
 
-## Option A — Install with `uv` (recommended)
+## Option A — Install from this repository with `uv` (recommended)
 
-### Step A1: Install tool globally
+### Step A1: Install tool globally (repo-pinned)
 ```bash
-uv tool install notebooklm-mcp-cli
+uv tool install "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
 ```
+
+This keeps your install aligned to this repository/ref rather than a generic package resolution path.
 
 ### Step A2: Verify commands are available
 ```bash
@@ -53,51 +53,47 @@ notebooklm-mcp --help
 
 ### Step A3: If command is missing, refresh install
 ```bash
-uv tool install --force notebooklm-mcp-cli
+uv tool install --force "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
 ```
 
 ---
 
-## Option B — Install with `pipx`
+## Option B — Run from source (for contributors)
 
-### Step B1: Install tool globally
-```bash
-pipx install notebooklm-mcp-cli
-```
-
-### Step B2: Verify
-```bash
-nlm --version
-notebooklm-mcp --help
-```
-
-### Step B3: If needed, force reinstall
-```bash
-pipx install --force notebooklm-mcp-cli
-```
-
----
-
-## Option C — Run from source (for contributors)
-
-### Step C1: Clone and enter repo
+### Step B1: Clone and enter repo
 ```bash
 git clone <your-fork-or-repo-url>
 cd notebooklm-mcp-cli
 ```
 
-### Step C2: Install editable
+### Step B2: Install editable
 ```bash
 pip install -e .
 ```
 
-### Step C3: Verify local run
+### Step B3: Verify local run
 ```bash
 PYTHONPATH=src python -m notebooklm_tools.cli.main --help
 PYTHONPATH=src python -m notebooklm_tools.mcp.server --help
 ```
 
 ---
+
+
+### One-command bootstrap (repo-owned)
+```bash
+curl -fsSL https://raw.githubusercontent.com/aloknathyadav2010/notebooklm-mcp-cli/newflow/install.sh | bash
+```
+
+
+### Update / Uninstall (seamless)
+```bash
+# Update to latest on the newflow branch
+uv tool install --force "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
+
+# Uninstall cleanly
+uv tool uninstall notebooklm-mcp-cli
+```
 
 ## 4) First-time authentication (required)
 
@@ -207,7 +203,7 @@ nlm indexing list
 ## 9) Troubleshooting checklist
 
 1. `nlm` not found:
-   - reinstall with `uv tool install --force notebooklm-mcp-cli`.
+   - reinstall with `uv tool install --force "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"`.
 2. MCP auth issues:
    - run `nlm login` again.
 3. Wrong account:

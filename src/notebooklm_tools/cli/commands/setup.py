@@ -23,6 +23,8 @@ from rich.prompt import Confirm, Prompt
 from rich.syntax import Syntax
 from rich.table import Table
 
+from notebooklm_tools.install_source import uvx_repo_args
+
 console = Console()
 app = typer.Typer(
     name="setup",
@@ -596,7 +598,7 @@ def _setup_json() -> None:
     if config_type == "uvx":
         server_entry = {
             "command": "uvx",
-            "args": ["--from", "notebooklm-mcp-cli", "notebooklm-mcp"],
+            "args": uvx_repo_args(),
         }
     else:
         if use_full_path:

@@ -21,7 +21,7 @@ nlm login --check || nlm login
 
 3. If `nlm` is missing from PATH, install/fix it:
 ```bash
-uv tool install --force notebooklm-mcp-cli
+uv tool install --force "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
 ```
 
 ## Zero-Setup Workspace Flow

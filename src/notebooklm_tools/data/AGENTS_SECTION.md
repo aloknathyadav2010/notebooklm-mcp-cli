@@ -58,7 +58,7 @@ For complete command reference, troubleshooting, and workflows, install the full
 
 ```bash
 # Install via uv
-uv tool install notebooklm-mcp-cli
+uv tool install "git+https://github.com/aloknathyadav2010/notebooklm-mcp-cli.git@newflow"
 
 # Then install/update skill for your AI tool
 nlm skill install <tool>  # Install (claude-code, opencode, gemini-cli, etc)

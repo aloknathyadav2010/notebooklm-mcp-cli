@@ -9,6 +9,7 @@ import typer
 from rich.console import Console
 
 from notebooklm_tools import __version__
+from notebooklm_tools.install_source import uv_tool_update_command
 from notebooklm_tools.core.auth import load_cached_tokens, AuthManager
 from notebooklm_tools.core.client import NotebookLMClient
 from notebooklm_tools.utils.config import get_config
@@ -180,5 +181,5 @@ def print_update_notification() -> None:
         console.print()
         console.print(
             f"[dim]🔔 Update available:[/dim] [cyan]{__version__}[/cyan] → [green]{latest}[/green]. "
-            f"[dim]Run[/dim] [bold]uv tool upgrade notebooklm-mcp-cli[/bold] [dim]to update.[/dim]"
+            f"[dim]Run[/dim] [bold]{uv_tool_update_command()}[/bold] [dim]to update from this repo/branch.[/dim]"
         )

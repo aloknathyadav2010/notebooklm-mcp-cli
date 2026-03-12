@@ -316,6 +316,62 @@ class TestAddSources:
             "nb-1", ["https://example.com"], wait=True, wait_timeout=60,
         )
 
+    def test_file_sources_uploaded_in_parallel(self, mock_client):
+        """File sources should be uploaded concurrently for better throughput."""
+        import threading
+        import time
+
+        active = 0
+        peak = 0
+        lock = threading.Lock()
+
+        def fake_add_file(*args, **kwargs):
+            nonlocal active, peak
+            with lock:
+                active += 1
+                peak = max(peak, active)
+            time.sleep(0.05)
+            with lock:
+                active -= 1
+            file_path = args[1]
+            return {"id": f"id-{file_path}", "title": file_path.split("/")[-1]}
+
+        mock_client.add_file.side_effect = fake_add_file
+
+        result = add_sources(mock_client, "nb-1", [
+            {"source_type": "file", "file_path": f"/tmp/doc-{i}.pdf"}
+            for i in range(10)
+        ])
+
+        assert result["added_count"] == 10
+        assert len(result["results"]) == 10
+        assert peak > 1
+
+    def test_parallel_file_upload_preserves_input_order(self, mock_client):
+        """Parallel uploads should still return results matching input order."""
+        import time
+
+        def fake_add_file(*args, **kwargs):
+            file_path = args[1]
+            if file_path.endswith("doc-0.pdf"):
+                time.sleep(0.1)
+            else:
+                time.sleep(0.01)
+            return {"id": file_path, "title": file_path.split("/")[-1]}
+
+        mock_client.add_file.side_effect = fake_add_file
+
+        result = add_sources(mock_client, "nb-1", [
+            {"source_type": "file", "file_path": "/tmp/doc-0.pdf"},
+            {"source_type": "file", "file_path": "/tmp/doc-1.pdf"},
+            {"source_type": "file", "file_path": "/tmp/doc-2.pdf"},
+        ])
+
+        assert [r["source_id"] for r in result["results"]] == [
+            "/tmp/doc-0.pdf", "/tmp/doc-1.pdf", "/tmp/doc-2.pdf",
+        ]
+
+
 
 class TestDeleteSources:
     """Test delete_sources (bulk) function."""

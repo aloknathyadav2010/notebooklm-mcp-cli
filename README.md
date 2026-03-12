@@ -7,6 +7,9 @@
 
 If you are brand new, this guide walks you through setup end-to-end with concrete steps for each install option.
 
+> **Roadmap vision:** See `docs/PROJECT_VISION_CONTEXTBRIDGE.md` for the high-level ContextBridge architecture and phased direction.
+> **Setup goal + audit:** See `docs/README_SETUP_AUDIT_GOAL_SEAMLESS_INSTALL.md` for install-source issues and the one-command setup target.
+
 ---
 
 ## 1) What you can do with this package

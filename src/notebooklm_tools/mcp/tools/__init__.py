@@ -49,6 +49,14 @@ from .indexing import (
     notebook_index_local,
     notebook_reindex_local,
 )
+from .skill_utility import (
+    skill_profiles,
+    skill_bootstrap,
+    skill_ask,
+    skill_reindex,
+    skill_add_to_workspace,
+    skill_diagnose_cli,
+)
 
 __all__ = [
     # Downloads (1 consolidated)
@@ -96,4 +104,11 @@ __all__ = [
     # Local indexing (2)
     "notebook_index_local",
     "notebook_reindex_local",
+    # Skill utility workflows (6)
+    "skill_profiles",
+    "skill_bootstrap",
+    "skill_ask",
+    "skill_reindex",
+    "skill_add_to_workspace",
+    "skill_diagnose_cli",
 ]

@@ -53,6 +53,9 @@ PYTHONPATH=src python -m notebooklm_tools.mcp.server --transport stdio
 
 ## Notes for Agents
 
+- **Required vision alignment:** Read `docs/PROJECT_VISION_CONTEXTBRIDGE.md` before proposing architecture changes.
+- **MVP policy:** We are still in MVP, so tactical shortcuts are acceptable for delivery speed.
+- **Guardrail:** Any architectural decision that moves away from the ContextBridge direction (hybrid provider orchestration, local-first defaults, scalable ingestion/retrieval) must be explicitly flagged and re-evaluated.
 - Prefer service-layer logic for reusable behavior; keep MCP/CLI thin.
 - Register new MCP tools in:
   - `src/notebooklm_tools/mcp/tools/__init__.py`

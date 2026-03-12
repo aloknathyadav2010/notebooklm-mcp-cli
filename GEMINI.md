@@ -8,6 +8,12 @@ This project implements a Model Context Protocol (MCP) server **and a full-featu
 
 Tested with personal/free tier accounts. May work with Google Workspace accounts but has not been tested. This project relies on internal APIs (`batchexecute` RPCs).
 
+## Project Vision Alignment (ContextBridge)
+
+- Read `docs/PROJECT_VISION_CONTEXTBRIDGE.md` before proposing architectural changes.
+- Current phase is **MVP**: pragmatic shortcuts are allowed for speed.
+- Architectural decisions that diverge from the ContextBridge direction (hybrid provider orchestration, local-first defaults, scalable ingestion/retrieval) should be explicitly called out and re-evaluated.
+
 ## Environment & Setup
 
 The project uses `uv` for dependency management and tool installation.

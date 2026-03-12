@@ -6,6 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **NotebookLM MCP Server & CLI** - Provides programmatic access to NotebookLM (notebooklm.google.com) via both a Model Context Protocol server and a comprehensive command-line interface.
 
+## Project Vision Alignment (ContextBridge)
+
+- Read `docs/PROJECT_VISION_CONTEXTBRIDGE.md` before proposing architectural changes.
+- Current phase is **MVP**: pragmatic shortcuts are allowed for speed.
+- Architectural decisions that diverge from the ContextBridge direction (hybrid provider orchestration, local-first defaults, scalable ingestion/retrieval) should be explicitly called out and re-evaluated.
+
 Tested with personal/free tier accounts. May work with Google Workspace accounts but has not been tested.
 
 ## Development Commands

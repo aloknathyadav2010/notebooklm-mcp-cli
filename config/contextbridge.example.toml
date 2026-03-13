@@ -1,0 +1,18 @@
+[project]
+name = "contextbridge"
+local_data_dir = "./data"
+
+[providers.notebooklm]
+enabled = true
+primary = true
+
+[providers.open_notebook]
+enabled = false
+
+[providers.local_rag]
+enabled = true
+embedding_store = "lancedb"
+
+[ingestion]
+concurrency_limit = 5
+deduplicate_by_hash = true

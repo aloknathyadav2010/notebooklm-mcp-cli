@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "contextbridge-bootstrap"
+version = "0.1.0"
+description = "Bootstrap installer for ContextBridge + notebooklm-mcp-cli dependency + skill sync"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "notebooklm-mcp-cli @ git+https://github.com/jacob-bd/notebooklm-mcp-cli.git"
+]
+
+[project.scripts]
+contextbridge-install = "contextbridge_bootstrap.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

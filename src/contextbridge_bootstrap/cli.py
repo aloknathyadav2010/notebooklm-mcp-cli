@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--skip-cursor-config", action="store_true", help="Do not write Cursor MCP config")
     parser.add_argument("--skip-claude-config", action="store_true", help="Do not write Claude Desktop MCP config")
+    parser.add_argument("--skip-claude-code-config", action="store_true", help="Do not write Claude Code MCP config")
     parser.add_argument("--skip-antigravity-config", action="store_true", help="Do not write Antigravity MCP config")
     parser.add_argument(
         "--ensure-only",
@@ -50,6 +51,7 @@ def main() -> None:
         skip_dependency_install=args.skip_dependency_install,
         ensure_cursor=not args.skip_cursor_config,
         ensure_claude=not args.skip_claude_config,
+        ensure_claude_code=not args.skip_claude_code_config,
         ensure_antigravity=not args.skip_antigravity_config,
     )
 

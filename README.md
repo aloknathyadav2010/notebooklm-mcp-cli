@@ -34,7 +34,7 @@ ContextBridge is designed to work where you work.
 | **Claude Code** | MCP Config | ✅ Automatic |
 | **Cursor** | MCP Config & Skills | ✅ Automatic |
 | **VS Code** | Skill Sync | ✅ Automatic |
-| **Antigravity** | MCP Config | ✅ Automatic |
+| **Antigravity** | MCP Config & Skills | ✅ Automatic |
 
 ---
 
@@ -50,13 +50,31 @@ cd my-project
 ```
 
 ### Command Line Interface
-Once installed, you can use the `contextbridge-install` tool to manage your setup:
+Once installed, you can use the `contextbridge-install` tool to manage your setup. Here is how you can use the available parameters:
 
 ```bash
-# Sync skills to a custom directory
-contextbridge-install --skills-dir ./my-skills --ide-target ~/.custom-ide/skills
+contextbridge-install [OPTIONS]
+```
 
-# Force overwrite existing skills
+#### Parameters
+
+| Option | Description |
+| :--- | :--- |
+| `--project-root` | **Where your project lives.** Defaults to the current directory. This is used to locate configuration files like `.cursor/mcp.json`. |
+| `--skills-dir` | **Source of your skills.** The folder containing the custom skills you want to sync. Defaults to `skills/` in your project root. |
+| `--ide-target` | **Custom destination for skills.** If you use an IDE not supported out-of-the-box, use this to point to its skills directory. Can be used multiple times. |
+| `--overwrite` | **Force update.** By default, we don't overwrite existing skills in your IDE. Use this flag to ensure your IDE has the latest version of every skill. |
+| `--ensure-only` | **Health check mode.** Verifies that the MCP configurations are correct without performing any file synchronization or dependency updates. |
+
+#### Examples
+
+**Syncing skills from a custom folder to a specific IDE:**
+```bash
+contextbridge-install --skills-dir ./my-custom-skills --ide-target ~/.my-ide/skills
+```
+
+**Updating all integrations after adding new skills to your project:**
+```bash
 contextbridge-install --overwrite
 ```
 

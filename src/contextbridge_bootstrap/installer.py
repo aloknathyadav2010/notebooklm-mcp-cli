@@ -34,15 +34,24 @@ def _unique_paths(paths: Iterable[Path]) -> list[Path]:
     return unique
 
 
-def _write_mcp_server_entry(config_path: Path, server_name: str, command: str, args: list[str]) -> Path:
+def _write_mcp_server_entry(
+    config_path: Path, server_name: str, command: str, args: list[str], env: dict[str, str] | None = None
+) -> Path:
     config_path.parent.mkdir(parents=True, exist_ok=True)
 
     data = {"mcpServers": {}}
     if config_path.exists():
-        data = json.loads(config_path.read_text())
+        try:
+            data = json.loads(config_path.read_text())
+        except json.JSONDecodeError:
+            pass
         data.setdefault("mcpServers", {})
 
-    data["mcpServers"][server_name] = {"command": command, "args": args}
+    entry = {"command": command, "args": args}
+    if env:
+        entry["env"] = env
+
+    data["mcpServers"][server_name] = entry
     config_path.write_text(json.dumps(data, indent=2) + "\n")
     return config_path
 
@@ -100,13 +109,21 @@ def sync_skills(skills_dir: str | Path, targets: Iterable[Path], overwrite: bool
     return copied, updated_targets
 
 
+import sys
+
+def _get_install_command() -> str:
+    # Use absolute path of the current executable to ensure it works globally
+    # If run as a script/entrypoint, sys.argv[0] is the path to the executable
+    return str(Path(sys.argv[0]).resolve())
+
+
 def ensure_cursor_mcp_config(project_root: str | Path, server_name: str = "contextbridge") -> Path:
     root = _expand(project_root)
     config_path = root / ".cursor" / "mcp.json"
     return _write_mcp_server_entry(
         config_path=config_path,
         server_name=server_name,
-        command="contextbridge-install",
+        command=_get_install_command(),
         args=["--ensure-only"],
     )
 
@@ -127,7 +144,17 @@ def ensure_claude_desktop_mcp_config(server_name: str = "contextbridge") -> Path
     return _write_mcp_server_entry(
         config_path=config_path,
         server_name=server_name,
-        command="contextbridge-install",
+        command=_get_install_command(),
+        args=["--ensure-only"],
+    )
+
+
+def ensure_claude_code_mcp_config(server_name: str = "contextbridge") -> Path:
+    config_path = _expand("~/.claude.json")
+    return _write_mcp_server_entry(
+        config_path=config_path,
+        server_name=server_name,
+        command=_get_install_command(),
         args=["--ensure-only"],
     )
 
@@ -137,7 +164,7 @@ def ensure_antigravity_mcp_config(server_name: str = "contextbridge") -> Path:
     return _write_mcp_server_entry(
         config_path=config_path,
         server_name=server_name,
-        command="contextbridge-install",
+        command=_get_install_command(),
         args=["--ensure-only"],
     )
 
@@ -150,6 +177,7 @@ def run_installer(
     skip_dependency_install: bool = False,
     ensure_cursor: bool = True,
     ensure_claude: bool = True,
+    ensure_claude_code: bool = True,
     ensure_antigravity: bool = True,
 ) -> InstallReport:
     dependency_done = install_notebooklm_dependency(skip=skip_dependency_install)
@@ -161,6 +189,8 @@ def run_installer(
         mcp_configs_updated.append(ensure_cursor_mcp_config(project_root=project_root))
     if ensure_claude:
         mcp_configs_updated.append(ensure_claude_desktop_mcp_config())
+    if ensure_claude_code:
+        mcp_configs_updated.append(ensure_claude_code_mcp_config())
     if ensure_antigravity:
         mcp_configs_updated.append(ensure_antigravity_mcp_config())
 
